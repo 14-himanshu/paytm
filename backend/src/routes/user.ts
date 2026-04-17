@@ -21,6 +21,12 @@ const signinSchema = z.object({
   password: z.string().min(6),
 });
 
+const updateSchema = z.object({
+  password: z.string().min(6).optional(),
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
+});
+
 router.post("/signup", async (req, res) => {
   try {
     const body = signupSchema.parse(req.body);
@@ -78,6 +84,44 @@ router.get("/me", authMiddleware, async (req, res) => {
     res.json(user);
   } catch (error) {
     res.status(411).json({ message: "Failed to fetch user" });
+  }
+});
+
+router.put("/", authMiddleware, async (req, res) => {
+  try {
+    const body = updateSchema.parse(req.body);
+
+    const updateData: any = {};
+    if (body.firstName) updateData.firstName = body.firstName;
+    if (body.lastName) updateData.lastName = body.lastName;
+    if (body.password) {
+      updateData.password = await bcrypt.hash(body.password, 10);
+    }
+
+    const user = await User.findByIdAndUpdate(req.userId, updateData, {
+      new: true,
+    }).select("-password");
+
+    res.json({ message: "User updated successfully", user });
+  } catch (error) {
+    res.status(411).json({ message: "Invalid input" });
+  }
+});
+
+router.get("/bulk", async (req, res) => {
+  try {
+    const filter = (req.query.filter as string) || "";
+
+    const users = await User.find({
+      $or: [
+        { firstName: { $regex: filter, $options: "i" } },
+        { lastName: { $regex: filter, $options: "i" } },
+      ],
+    }).select("username firstName lastName _id");
+
+    res.json(users);
+  } catch (error) {
+    res.status(411).json({ message: "Failed to fetch users" });
   }
 });
 

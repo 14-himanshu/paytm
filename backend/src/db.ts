@@ -46,6 +46,23 @@ const userSchema = new mongoose.Schema({
 
 export const User = mongoose.model("User", userSchema);
 
+// Account Schema
+const accountSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+    unique: true,
+  },
+  balance: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+});
+
+export const Account = mongoose.model("Account", accountSchema);
+
 export const connectDB = async () => {
   try {
     await mongoose.connect(MONGODB_URI);
